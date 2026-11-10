@@ -1,0 +1,13 @@
+"use client";
+import Link from "next/link";
+import {useEffect,useState} from "react";
+import {api} from "../../lib/api";
+type Appointment={id:string;appointmentAt:string;reason:string;status:string;tokenNumber:number|null;doctor:{user:{name:string};department:{name:string}};queueEntry?:{tokenNumber:number;status:string}|null};
+export default function Dashboard(){
+ const [rows,setRows]=useState<Appointment[]>([]),[error,setError]=useState(""),[busy,setBusy]=useState("");
+ async function load(){try{setRows(await api("/appointments/my"))}catch(e){setError((e as Error).message)}}
+ useEffect(()=>{load()},[]);
+ async function checkin(id:string){setBusy(id);try{await api(`/queue/check-in/${id}`,{method:"POST"});await load()}catch(e){setError((e as Error).message)}finally{setBusy("")}}
+ async function cancel(id:string){try{await api(`/appointments/${id}/cancel`,{method:"PATCH"});await load()}catch(e){setError((e as Error).message)}}
+ return <main className="shell"><header className="top"><Link href="/" className="brand">✚ MediCare</Link><nav className="nav"><Link href="/doctors">Find doctors</Link><button className="btn secondary" onClick={()=>{localStorage.removeItem("medicare_token");localStorage.removeItem("medicare_user");location.href="/"}}>Logout</button></nav></header><h1>Patient dashboard</h1><p className="muted">Your appointments and queue information.</p>{error&&<p className="error">{error}</p>}<div className="grid"><div className="card"><div className="muted">Total appointments</div><div className="stat">{rows.length}</div></div><div className="card"><div className="muted">Upcoming</div><div className="stat">{rows.filter(x=>new Date(x.appointmentAt)>new Date()&&x.status==="BOOKED").length}</div></div><div className="card"><div className="muted">Checked in</div><div className="stat">{rows.filter(x=>x.queueEntry).length}</div></div></div><div className="card"><div className="list"><h2>My appointments</h2><Link className="btn" href="/doctors">+ Book new</Link></div>{rows.map(a=><div className="list" key={a.id}><div><b>{a.doctor.user.name}</b><div className="muted">{a.doctor.department.name} · {new Date(a.appointmentAt).toLocaleString()}</div><div className="muted">{a.reason}</div>{a.queueEntry&&<p><b>Token #{a.queueEntry.tokenNumber}</b> · {a.queueEntry.status}</p>}</div><div><span className="pill">{a.status}</span><div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>{a.status==="BOOKED"&&<button className="btn" disabled={busy===a.id} onClick={()=>checkin(a.id)}>Check in</button>}{["BOOKED","CHECKED_IN"].includes(a.status)&&<button className="btn secondary" onClick={()=>cancel(a.id)}>Cancel</button>}</div></div></div>)}{rows.length===0&&<p className="muted">No appointments yet.</p>}</div></main>;
+}

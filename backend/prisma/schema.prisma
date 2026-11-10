@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum QueueStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  phone        String?
+  role         Role          @default(PATIENT)
+  doctor       Doctor?
+  appointments Appointment[] @relation("PatientAppointments")
+  createdAt    DateTime      @default(now())
+}
+
+model Department {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  doctors Doctor[]
+}
+
+model Doctor {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  departmentId    String
+  specialization  String
+  consultationFee Int     @default(500)
+  available       Boolean @default(true)
+
+  user         User          @relation(fields: [userId], references: [id])
+  department   Department    @relation(fields: [departmentId], references: [id])
+  appointments Appointment[]
+}
+
+model Appointment {
+  id            String            @id @default(cuid())
+  patientId     String
+  doctorId      String
+  appointmentAt DateTime
+  reason        String
+  status        AppointmentStatus @default(BOOKED)
+  tokenNumber   Int?
+
+  patient    User        @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor     Doctor      @relation(fields: [doctorId], references: [id])
+  queueEntry QueueEntry?
+
+  createdAt DateTime @default(now())
+
+  @@index([doctorId, appointmentAt])
+}
+
+model QueueEntry {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  tokenNumber   Int
+  status        QueueStatus @default(WAITING)
+  checkedInAt   DateTime    @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([status, checkedInAt])
+}
