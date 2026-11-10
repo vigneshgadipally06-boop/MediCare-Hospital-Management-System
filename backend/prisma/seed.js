@@ -31,7 +31,7 @@ async function main() {
   // 2. Create admin
   await prisma.user.upsert({
     where: { email: "admin@medicare.local" },
-    update: {},
+    update: { passwordHash, role: "ADMIN" },
     create: {
       name: "Hospital Administrator",
       email: "admin@medicare.local",
@@ -54,7 +54,7 @@ async function main() {
   for (const [name, email, department, specialization, fee] of doctorData) {
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { passwordHash, role: "DOCTOR" },
       create: {
         name,
         email,
@@ -98,7 +98,7 @@ async function main() {
 
     const patient = await prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { passwordHash, role: "PATIENT" },
       create: {
         name: patientNames[i],
         email,

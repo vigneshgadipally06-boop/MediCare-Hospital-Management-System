@@ -45,12 +45,22 @@ with `npm run dev -- --hostname 0.0.0.0` and visit
 address reachable from the machine running Next.js; browser requests stay on
 the frontend origin and do not use the visitor's `localhost`.
 
+The production static export uses the GitHub Pages path
+`/MediCare-Hospital-Management-System/`. Before building for a public
+deployment, set `NEXT_PUBLIC_API_URL` to the publicly reachable backend API
+base URL (for example, `https://api.example.com/api`); do not use `localhost`
+for a deployed site.
+
 ## Demo accounts (after seeding)
-- Admin: admin@medicare.local / Admin@123
-- Doctor: doctor@medicare.local / Doctor@123
-- Patient: patient@medicare.local / Patient@123
+- Admin: admin@medicare.local / Demo@123
+- Doctor: ananya@medicare.local / Demo@123
+- Patient: patient1@medicare.local / Demo@123
 
 Change demo passwords before any real deployment.
+The admin portal requires an `ADMIN` account. Queue management is available
+only to `ADMIN` and `DOCTOR` accounts. Patient accounts can browse doctors and
+manage their own appointments, but cannot open admin or queue controls. Run
+`npm run seed` in `backend` to create or reset the demo accounts.
 
 ## API overview
 - POST `/api/auth/register`

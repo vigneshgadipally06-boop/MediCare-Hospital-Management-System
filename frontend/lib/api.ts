@@ -1,4 +1,7 @@
-const API = "/api";
+const API =
+  process.env.NODE_ENV === "development"
+    ? "/api"
+    : process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export function getToken() {
   if (typeof window === "undefined") return "";

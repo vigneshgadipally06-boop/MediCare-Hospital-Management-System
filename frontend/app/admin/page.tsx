@@ -6,27 +6,48 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    patients: 0,
-    doctors: 0,
-    appointments: 0,
-    waiting: 0
-  });
+  const [stats, setStats] = useState<{
+    patients: number;
+    doctors: number;
+    appointments: number;
+    waiting: number;
+  } | null>(null);
 
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("medicare_token");
+    if (!token) {
+      setError("Sign in with an admin account to access the admin portal.");
+      return;
+    }
+
+    let user: { role?: string } | null;
+    try {
+      user = JSON.parse(localStorage.getItem("medicare_user") || "null");
+    } catch {
+      setError("Your saved sign-in is invalid. Sign in again to continue.");
+      return;
+    }
+
+    if (user?.role !== "ADMIN") {
+      setError("Access denied. Sign out and sign in with an admin account.");
+      return;
+    }
+
     api("/admin/overview")
       .then(setStats)
       .catch((err) => setError(err.message));
   }, []);
 
-  const cards = [
-    ["Total Patients", stats.patients, "👥"],
-    ["Total Doctors", stats.doctors, "👨‍⚕️"],
-    ["Appointments", stats.appointments, "📅"],
-    ["Waiting Patients", stats.waiting, "⏳"]
-  ];
+  const cards = stats
+    ? [
+        ["Total Patients", stats.patients, "👥"],
+        ["Total Doctors", stats.doctors, "👨‍⚕️"],
+        ["Appointments", stats.appointments, "📅"],
+        ["Waiting Patients", stats.waiting, "⏳"]
+      ]
+    : [];
 
   return (
     <main className="shell">
@@ -54,7 +75,7 @@ export default function AdminDashboard() {
         <div style={{ fontSize: 65 }}>🏥</div>
       </section>
 
-      <section className="grid">
+      {stats && <section className="grid">
         {cards.map(([title, value, icon]) => (
           <div className="card" key={String(title)}>
             <div style={{ fontSize: 30 }}>{icon}</div>
@@ -62,9 +83,13 @@ export default function AdminDashboard() {
             <div className="stat">{value}</div>
           </div>
         ))}
-      </section>
+      </section>}
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error">
+          {error} <Link href="/login">Sign in with another account</Link>
+        </p>
+      )}
 
       <h2>Hospital Management</h2>
 
@@ -72,32 +97,31 @@ export default function AdminDashboard() {
         <Link href="/doctor-queue" className="card">
           <h2>🎫 Queue Management</h2>
           <p className="muted">
-            View waiting patients, call next token and
-            complete consultations.
+            Admins and doctors can view waiting patients, call the next token
+            and complete consultations.
           </p>
           <span className="btn">Manage Queue →</span>
         </Link>
 
         <Link href="/doctors" className="card">
-          <h2>👨‍⚕️ Doctor Management</h2>
+          <h2>👨‍⚕️ Doctor Directory</h2>
           <p className="muted">
-            View hospital doctors and their departments.
+            Browse hospital doctors and their departments.
           </p>
           <span className="btn">View Doctors →</span>
         </Link>
 
-        <Link href="/dashboard" className="card">
+        <div className="card">
           <h2>📅 Appointments</h2>
           <p className="muted">
-            Access appointment information.
+            Patients can view their appointments from the patient dashboard.
           </p>
-          <span className="btn">View Appointments →</span>
-        </Link>
+        </div>
 
         <Link href="/doctor-queue" className="card">
           <h2>📊 Patient Queue</h2>
           <p className="muted">
-            Monitor the hospital's daily queue.
+            Admins and doctors can monitor the hospital's daily queue.
           </p>
           <span className="btn">Open Queue →</span>
         </Link>
